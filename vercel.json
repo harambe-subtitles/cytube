@@ -1,10 +1,5 @@
 {
     "version": 2,
-    "functions": {
-      "hello.js": {
-        "runtime": "node"
-      }
-    },
     "routes": [
       {
         "src": "/api/cytube",
