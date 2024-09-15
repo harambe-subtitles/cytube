@@ -1,6 +1,4 @@
 import ffmpeg from 'fluent-ffmpeg';
-import { promises as fs } from 'fs';
-import path from 'path';
 
 // Function to fetch video duration using ffmpeg
 async function fetchVideoDuration(url) {
@@ -28,8 +26,8 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Title, URLs, and qualities are required.' });
     }
 
-    // Parse URLs and qualities
-    const urlArray = urls.split(',').map(url => url.trim());
+    // Decode URLs and parse qualities
+    const urlArray = decodeURIComponent(urls).split(',').map(url => url.trim());
     const qualityArray = qualities.split(',').map(q => q.trim());
 
     if (urlArray.length === 0 || qualityArray.length === 0 || urlArray.length !== qualityArray.length) {
