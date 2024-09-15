@@ -19,8 +19,8 @@ export default async function handler(req, res) {
   };
 
   // GitHub repository details
-  const owner = "your-github-username"; // replace with your GitHub username
-  const repo = "your-repo-name"; // replace with your repository name
+  const owner = "harambe-subtitles"; // replace with your GitHub username
+  const repo = "cytube-json"; // replace with your repository name
   const path = "videoData.json"; // the path where you want to store the file
   const branch = "main"; // the branch you want to commit to
 
