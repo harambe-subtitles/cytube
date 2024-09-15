@@ -1,17 +1,3 @@
-import ffmpeg from 'fluent-ffmpeg';
-
-// Function to fetch video duration using ffmpeg
-async function fetchVideoDuration(url) {
-    return new Promise((resolve, reject) => {
-        ffmpeg.ffprobe(url, (err, metadata) => {
-            if (err) {
-                reject(`Error loading video: ${err.message}`);
-            } else {
-                resolve(metadata.format.duration);
-            }
-        });
-    });
-}
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -19,7 +5,7 @@ export default async function handler(req, res) {
     }
 
     // Extract title, urls, and qualities from query parameters
-    const { title, urls, qualities } = req.query;
+    const { title, urls, qualities, duration } = req.query;
 
     // Validate input
     if (!title || !urls || !qualities) {
@@ -34,21 +20,9 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Invalid format. Ensure URLs and qualities are provided as comma-separated lists and have the same length.' });
     }
 
-    try {
-        // Fetch durations for each URL
-        const durationPromises = urlArray.map(async (url) => {
-            try {
-                return await fetchVideoDuration(url);
-            } catch (err) {
-                console.error(`Error fetching duration for ${url}: ${err}`);
-                return 0; // Default duration if error occurs
-            }
-        });
-        const durations = await Promise.all(durationPromises);
-
         const videoData = {
             title,
-            duration: durations[0] || 0, // Use the duration of the first video URL, adjust as needed
+            duration: duration,
             live: false, // Placeholder, update if needed
             sources: urlArray.map((url, index) => ({
                 url,
