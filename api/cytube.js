@@ -38,7 +38,14 @@ export default async function handler(req, res) {
 
     try {
         // Fetch durations for each URL
-        const durationPromises = urlArray.map(url => fetchVideoDuration(url));
+        const durationPromises = urlArray.map(async (url) => {
+            try {
+                return await fetchVideoDuration(url);
+            } catch (err) {
+                console.error(`Error fetching duration for ${url}: ${err}`);
+                return 0; // Default duration if error occurs
+            }
+        });
         const durations = await Promise.all(durationPromises);
 
         const videoData = {
