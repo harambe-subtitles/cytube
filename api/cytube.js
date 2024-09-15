@@ -1,89 +1,56 @@
-export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+// Function to fetch video duration
+async function fetchVideoDuration(url) {
+  return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.src = url;
+      video.style.display = 'none'; // Hide the video element
 
-  // Extract title and URLs from the query parameters
-  const { title, urls } = req.query;
+      video.addEventListener('loadedmetadata', () => {
+          resolve(video.duration);
+      });
+      video.addEventListener('error', (e) => {
+          reject(`Error loading video: ${e.message}`);
+      });
+  });
+}
 
-  // Validate input
-  if (!title || !urls) {
-    return res.status(400).json({ error: 'Title and URLs are required.' });
-  }
-
-  // Parse URLs if they are provided as a comma-separated string
-  const urlArray = typeof urls === 'string' ? urls.split(',') : [];
-
-  if (urlArray.length === 0) {
-    return res.status(400).json({ error: 'Invalid URLs format. Provide URLs as a comma-separated list.' });
-  }
-
-  const videoData = {
-    title,
-    duration: 0, // Placeholder, update with actual logic if needed
-    live: false, // Placeholder, update if needed
-    sources: urlArray.map((url, index) => ({
-      url,
-      contentType: "video/mp4",
-      quality: index === 0 ? 1080 : 720 // Example logic, adjust as needed
-    })),
-    textTracks: [] // Placeholder, update if needed
-  };
-
-  // GitHub repository details
-  const owner = "harambe-subtitles"; // replace with your GitHub username
-  const repo = "cytube-json"; // replace with your repository name
-  const path = "videoData.json"; // the path where you want to store the file
-  const branch = "main"; // the branch you want to commit to
-
-  // GitHub personal access token
-  const token = process.env.GITHUB_TOKEN;
-
+// Function to send video data to the API
+async function sendVideoData(title, urls) {
   try {
-    // Dynamically import the Octokit module
-    const { Octokit } = await import('@octokit/rest');
+      const urlArray = urls.split(',');
+      const durationPromises = urlArray.map(url => fetchVideoDuration(url));
+      const durations = await Promise.all(durationPromises);
 
-    const octokit = new Octokit({ auth: token });
+      const videoData = {
+          title,
+          duration: durations[0] || 0, // Assuming the first URL's duration is used; adjust as needed
+          live: false,
+          sources: urlArray.map((url, index) => ({
+              url,
+              contentType: "video/mp4",
+              quality: index === 0 ? 1080 : 720 // Example logic, adjust as needed
+          })),
+          textTracks: []
+      };
 
-    try {
-      // Get the current file content (if it exists)
-      const { data: { content, sha } } = await octokit.rest.repos.getContent({
-        owner,
-        repo,
-        path,
-        branch
+      const response = await fetch('/api/handler', {
+          method: 'GET',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(videoData) // If using GET, move data to query params
       });
 
-      // Update the file
-      await octokit.rest.repos.createOrUpdateFileContents({
-        owner,
-        repo,
-        path,
-        message: "Update videoData.json",
-        content: Buffer.from(JSON.stringify(videoData, null, 2)).toString('base64'),
-        sha,
-        branch
-      });
-
-      res.status(200).json({ message: "File updated successfully" });
-    } catch (fileError) {
-      if (fileError.status === 404) {
-        // If the file does not exist, create it
-        await octokit.rest.repos.createOrUpdateFileContents({
-          owner,
-          repo,
-          path,
-          message: "Create videoData.json",
-          content: Buffer.from(JSON.stringify(videoData, null, 2)).toString('base64'),
-          branch
-        });
-
-        res.status(200).json({ message: "File created successfully" });
+      const responseData = await response.json();
+      if (response.ok) {
+          console.log(`Success: ${responseData.message}`);
       } else {
-        res.status(fileError.status || 500).json({ error: fileError.message });
+          console.error(`Error: ${responseData.error}`);
       }
-    }
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+      console.error(`Error: ${error.message}`);
   }
 }
+
+// Example usage
+sendVideoData('Outlaw 2024', 'https://example.com/video1.mp4,https://example.com/video2.mp4');
