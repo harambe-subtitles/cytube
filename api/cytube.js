@@ -1,5 +1,5 @@
+import { Octokit } from '@octokit/rest'; // Use this if you are using ES Modules
 import ffmpeg from 'fluent-ffmpeg';
-import { Octokit } from '@octokit/rest';
 
 // Function to fetch video duration using ffmpeg
 async function fetchVideoDuration(url) {
@@ -47,7 +47,7 @@ export default async function handler(req, res) {
             sources: urlArray.map((url, index) => ({
                 url,
                 contentType: "video/mp4",
-                quality: parseInt(qualityArray[index], 10) || 1080 // Convert quality to integer, default to 1080
+                quality: parseInt(qualityArray[index], 10) || 720 // Convert quality to integer, default to 720
             })),
             textTracks: [] // Placeholder, update if needed
         };
@@ -60,6 +60,9 @@ export default async function handler(req, res) {
 
         // GitHub personal access token
         const token = process.env.GITHUB_TOKEN;
+
+        // Use dynamic import for Octokit if using CommonJS modules
+        const { Octokit } = await import('@octokit/rest');
 
         const octokit = new Octokit({ auth: token });
 
