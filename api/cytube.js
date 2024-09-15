@@ -1,5 +1,7 @@
-// videoMetadata.js
-export default function handler(req, res) {
+import { Octokit } from "@octokit/rest";
+
+export default async function handler(req, res) {
+  // Your existing videoData
   const videoData = {
     title: "Outlaw 2024 (tylko napisy)",
     duration: 5105,
@@ -19,5 +21,56 @@ export default function handler(req, res) {
     textTracks: []
   };
 
-  res.status(200).json(videoData);
+  // GitHub repository details
+  const owner = "harambe-subtitles"; // replace with your GitHub username
+  const repo = "cytube-json"; // replace with your repository name
+  const path = "videoData.json"; // the path where you want to store the file
+  const branch = "main"; // the branch you want to commit to
+
+  // GitHub personal access token
+  const token = process.env.GITHUB_TOKEN;
+
+  const octokit = new Octokit({ auth: token });
+
+  try {
+    // Get the current file content (if it exists)
+    const { data: { content, sha } } = await octokit.rest.repos.getContent({
+      owner,
+      repo,
+      path,
+      branch
+    });
+
+    // Decode the existing content
+    const existingContent = Buffer.from(content, 'base64').toString('utf8');
+
+    // Update the file
+    await octokit.rest.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path,
+      message: "Update videoData.json",
+      content: Buffer.from(JSON.stringify(videoData, null, 2)).toString('base64'),
+      sha,
+      branch
+    });
+
+    res.status(200).json({ message: "File updated successfully" });
+  } catch (error) {
+    // If the file does not exist, create it
+    if (error.status === 404) {
+      await octokit.rest.repos.createOrUpdateFileContents({
+        owner,
+        repo,
+        path,
+        message: "Create videoData.json",
+        content: Buffer.from(JSON.stringify(videoData, null, 2)).toString('base64'),
+        branch
+      });
+
+      res.status(200).json({ message: "File created successfully" });
+    } else {
+      res.status(error.status || 500).json({ error: error.message });
+    }
+  }
 }
