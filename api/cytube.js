@@ -38,9 +38,21 @@ module.exports = async function handler(req, res) {
     textTracks: []
   };
 
+  const now = new Date();
+
+  // Pobierz poszczególne składowe daty i godziny
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0'); // Miesiące są indeksowane od 0
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+
+  const dateTimePart = `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+
   const owner = "harambe-subtitles";
   const repo = "cytube-json";
-  const pathInRepo = "videoData.json";
+  const pathInRepo = `videoData-${dateTimePart}.json`;
   const branch = "main";
   const token = process.env.GITHUB_TOKEN;
 
@@ -79,7 +91,7 @@ module.exports = async function handler(req, res) {
           branch
         });
 
-        res.status(200).json({ message: "File created successfully" });
+        res.status(200).json({ message: "File created successfully", fileName: pathInRepo });
       } else {
         res.status(fileError.status || 500).json({ error: fileError.message });
       }
