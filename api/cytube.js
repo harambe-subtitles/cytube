@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
 
   const videoData = {
     title,
-    duration,
+    Number(duration),
     live: false,
     sources: urlArray.map((url, index) => ({
       url,
