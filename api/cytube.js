@@ -1,7 +1,4 @@
-import { Octokit } from "@octokit/rest";
-
 export default async function handler(req, res) {
-  // Your existing videoData
   const videoData = {
     title: "Outlaw 2024 (tylko napisy)",
     duration: 5105,
@@ -22,17 +19,20 @@ export default async function handler(req, res) {
   };
 
   // GitHub repository details
-  const owner = "harambe-subtitles"; // replace with your GitHub username
-  const repo = "cytube-json"; // replace with your repository name
+  const owner = "your-github-username"; // replace with your GitHub username
+  const repo = "your-repo-name"; // replace with your repository name
   const path = "videoData.json"; // the path where you want to store the file
   const branch = "main"; // the branch you want to commit to
 
   // GitHub personal access token
   const token = process.env.GITHUB_TOKEN;
 
-  const octokit = new Octokit({ auth: token });
-
   try {
+    // Dynamically import the Octokit module
+    const { Octokit } = await import('@octokit/rest');
+
+    const octokit = new Octokit({ auth: token });
+
     // Get the current file content (if it exists)
     const { data: { content, sha } } = await octokit.rest.repos.getContent({
       owner,
