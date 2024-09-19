@@ -2,6 +2,16 @@ const { Octokit } = require("@octokit/rest");
 const btoa = require('btoa');
 
 export default async function handler(req, res) {
+  // Allow CORS from any origin by setting the Access-Control-Allow-Origin header
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle the OPTIONS method for preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end(); // Quickly respond to preflight requests
+  }
+
   if (req.method === 'POST') {
     const { subtitleFiles } = req.body;
 
@@ -10,7 +20,7 @@ export default async function handler(req, res) {
     }
 
     const token = process.env.GITHUB_TOKEN;   // Access the GitHub token from environment variables
-    const owner = 'harambe-subtitles';            // Replace with your GitHub username
+    const owner = 'harambe-subtitles';        // Replace with your GitHub username
     const repo = 'subtitles';                 // Replace with your repository name
     const branch = 'main';                    // The branch where files will be uploaded
 
