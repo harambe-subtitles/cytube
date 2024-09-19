@@ -1,4 +1,4 @@
-import formidable from 'formidable';
+import { IncomingForm } from 'formidable';
 import fs from 'fs';
 
 export const config = {
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     auth: process.env.GITHUB_TOKEN, // Your GitHub token from environment variables
   });
 
-  const form = new formidable.IncomingForm();
+  const form = new IncomingForm(); // Updated to use named import
   form.parse(req, async (err, fields, files) => {
     if (err) {
       console.error('Form parsing error:', err);
