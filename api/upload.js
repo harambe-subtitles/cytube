@@ -1,10 +1,5 @@
-import { Octokit } from "@octokit/rest";
-import formidable from "formidable";
-import fs from "fs";
-
-const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN, // Your GitHub token from environment variables
-});
+import formidable from 'formidable';
+import fs from 'fs';
 
 export const config = {
   api: {
@@ -13,9 +8,32 @@ export const config = {
 };
 
 export default async function handler(req, res) {
+  // CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins; adjust as needed
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    // Preflight request handling
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Only POST method is allowed' });
   }
+
+  // Dynamically import Octokit
+  let Octokit;
+  try {
+    Octokit = (await import('@octokit/rest')).Octokit;
+  } catch (error) {
+    console.error('Error importing Octokit:', error);
+    return res.status(500).json({ error: 'Failed to import Octokit' });
+  }
+
+  const octokit = new Octokit({
+    auth: process.env.GITHUB_TOKEN, // Your GitHub token from environment variables
+  });
 
   const form = new formidable.IncomingForm();
   form.parse(req, async (err, fields, files) => {
