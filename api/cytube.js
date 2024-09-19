@@ -13,7 +13,7 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { title, urls, qualities, duration } = req.query;
+  const { title, urls, qualities, duration, trackUrls, trackNames, trackDefault } = req.query;
 
   if (!title || !urls || !qualities) {
     return res.status(400).json({ error: 'Title, URLs, and qualities are required.' });
@@ -26,6 +26,27 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Invalid format. Ensure URLs and qualities are provided as comma-separated lists and have the same length.' });
   }
 
+  // Handle the textTracks
+  let textTracks = [];
+
+  if (trackUrls && trackNames) {
+    const trackUrlArray = decodeURIComponent(trackUrls).split(',').map(url => url.trim());
+    const trackNameArray = decodeURIComponent(trackNames).split(',').map(name => name.trim());
+
+    // Ensure the trackUrls and trackNames arrays are of the same length
+    if (trackUrlArray.length !== trackNameArray.length) {
+      return res.status(400).json({ error: 'Track URLs and Track Names must have the same length.' });
+    }
+
+    // Map through track arrays and construct textTracks
+    textTracks = trackUrlArray.map((url, index) => ({
+      url,
+      contentType: 'text/vtt',
+      name: trackNameArray[index],
+      default: trackNameArray[index] === trackDefault
+    }));
+  }
+
   const videoData = {
     title,
     duration: Number(duration),
@@ -35,14 +56,12 @@ module.exports = async function handler(req, res) {
       contentType: "video/mp4",
       quality: parseInt(qualityArray[index], 10) || 720
     })),
-    textTracks: []
+    textTracks // Add the dynamic textTracks here
   };
 
   const now = new Date();
-
-  // Pobierz poszczególne składowe daty i godziny
   const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0'); // Miesiące są indeksowane od 0
+  const month = String(now.getMonth() + 1).padStart(2, '0');
   const day = String(now.getDate()).padStart(2, '0');
   const hours = String(now.getHours()).padStart(2, '0');
   const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -57,7 +76,6 @@ module.exports = async function handler(req, res) {
   const token = process.env.GITHUB_TOKEN;
 
   try {
-    // Dynamically import Octokit
     const { Octokit } = await import('@octokit/rest');
     const octokit = new Octokit({ auth: token });
 
