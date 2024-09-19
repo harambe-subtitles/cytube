@@ -29,23 +29,24 @@ module.exports = async function handler(req, res) {
   // Handle the textTracks
   let textTracks = [];
 
-  if (trackUrls && trackNames) {
+  if (trackUrls && trackNames && trackDefault) {
     const trackUrlArray = decodeURIComponent(trackUrls).split(',').map(url => url.trim());
     const trackNameArray = decodeURIComponent(trackNames).split(',').map(name => name.trim());
+    const trackDefaultArray = decodeURIComponent(trackDefault).split(',').map(defaultValue => defaultValue.trim() === 'true');
 
-    // Ensure the trackUrls and trackNames arrays are of the same length
-    if (trackUrlArray.length !== trackNameArray.length) {
-      return res.status(400).json({ error: 'Track URLs and Track Names must have the same length.' });
-    }
-
-    // Map through track arrays and construct textTracks
-    textTracks = trackUrlArray.map((url, index) => ({
-      url,
-      contentType: 'text/vtt',
-      name: trackNameArray[index],
-      default: trackNameArray[index] === trackDefault
-    }));
+  // Ensure the trackUrls, trackNames, and trackDefault arrays are of the same length
+  if (trackUrlArray.length !== trackNameArray.length || trackNameArray.length !== trackDefaultArray.length) {
+    return res.status(400).json({ error: 'Track URLs, Track Names, and Track Defaults must have the same length.' });
   }
+
+  // Map through track arrays and construct textTracks
+  textTracks = trackUrlArray.map((url, index) => ({
+    url,
+    contentType: 'text/vtt',
+    name: trackNameArray[index],
+    default: trackDefaultArray[index]
+  }));
+}
 
   const videoData = {
     title,
