@@ -1,81 +1,47 @@
-import { IncomingForm } from 'formidable';
-import fs from 'fs';
-
-export const config = {
-  api: {
-    bodyParser: false, // Disable body parsing to handle file uploads
-  },
-};
+const { Octokit } = require("@octokit/rest");
+const btoa = require('btoa');
 
 export default async function handler(req, res) {
-  // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins; adjust as needed
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'POST') {
+    const { subtitleFiles } = req.body;
 
-  if (req.method === 'OPTIONS') {
-    // Preflight request handling
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Only POST method is allowed' });
-  }
-
-  // Dynamically import Octokit
-  let Octokit;
-  try {
-    Octokit = (await import('@octokit/rest')).Octokit;
-  } catch (error) {
-    console.error('Error importing Octokit:', error);
-    return res.status(500).json({ error: 'Failed to import Octokit' });
-  }
-
-  const octokit = new Octokit({
-    auth: process.env.GITHUB_TOKEN, // Your GitHub token from environment variables
-  });
-
-  const form = new IncomingForm(); // Updated to use named import
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      console.error('Form parsing error:', err);
-      return res.status(500).json({ error: 'Error processing the files' });
+    if (!subtitleFiles || subtitleFiles.length === 0) {
+      return res.status(400).json({ message: 'No subtitle files provided' });
     }
 
-    const fileFields = files.files || [];
-    const nameFields = fields.names || [];
-    const defaultFields = fields.defaults || [];
+    const token = process.env.GITHUB_TOKEN;   // Access the GitHub token from environment variables
+    const owner = 'harambe-subtitles';            // Replace with your GitHub username
+    const repo = 'subtitles';                 // Replace with your repository name
+    const branch = 'main';                    // The branch where files will be uploaded
 
-    if (!Array.isArray(fileFields) || fileFields.length === 0) {
-      return res.status(400).json({ error: 'No files uploaded' });
-    }
+    const octokit = new Octokit({
+      auth: token
+    });
 
     try {
-      const uploadPromises = fileFields.map(async (file, index) => {
-        const filePath = file.filepath;
-        const fileName = file.originalFilename;
-        const subtitleName = nameFields[index] || 'Unknown';
-        const isDefault = defaultFields[index] === 'true';
+      for (const file of subtitleFiles) {
+        const { fileName, content } = file;
 
-        const content = fs.readFileSync(filePath, 'utf8');
-        const contentBase64 = Buffer.from(content).toString('base64');
+        // Convert content to Base64 as required by GitHub API
+        const base64Content = btoa(content);
 
+        // Upload the file to GitHub
         await octokit.repos.createOrUpdateFileContents({
-          owner: process.env.GITHUB_OWNER,
-          repo: process.env.GITHUB_REPO,
-          path: `${fileName}`, // Ensure this path is correct and doesn't conflict with existing files
-          message: `Upload ${fileName}`,
-          content: contentBase64,
-          branch: process.env.GITHUB_BRANCH,
+          owner,
+          repo,
+          path: `${fileName}`,   // Path to store the file in the repo
+          message: `Upload subtitle ${fileName}`,
+          content: base64Content,          // File content in Base64
+          branch,
         });
-      });
+      }
 
-      await Promise.all(uploadPromises);
-
-      res.status(200).json({ message: 'Files uploaded successfully' });
+      return res.status(200).json({ message: 'Subtitles uploaded successfully!' });
     } catch (error) {
-      console.error('Error uploading files:', error);
-      res.status(500).json({ error: 'Failed to upload files' });
+      console.error(error);
+      return res.status(500).json({ message: 'Failed to upload subtitles' });
     }
-  });
+  } else {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
 }
