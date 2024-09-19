@@ -7,9 +7,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // Handle the OPTIONS method for preflight requests
+  // Handle preflight OPTIONS request
   if (req.method === 'OPTIONS') {
-    return res.status(200).end(); // Quickly respond to preflight requests
+    // Respond to the preflight request with status 200
+    return res.status(200).end();
   }
 
   if (req.method === 'POST') {
