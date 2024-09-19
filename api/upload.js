@@ -1,16 +1,13 @@
-const { Octokit } = require("@octokit/rest");
-const btoa = require('btoa');
-
+// Upload function with dynamic import for ES module
 export default async function handler(req, res) {
   // Allow CORS from any origin by setting the Access-Control-Allow-Origin header
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  // Handle preflight OPTIONS request
+  // Handle the OPTIONS method for preflight requests
   if (req.method === 'OPTIONS') {
-    // Respond to the preflight request with status 200
-    return res.status(200).end();
+    return res.status(200).end(); // Quickly respond to preflight requests
   }
 
   if (req.method === 'POST') {
@@ -25,11 +22,15 @@ export default async function handler(req, res) {
     const repo = 'subtitles';                 // Replace with your repository name
     const branch = 'main';                    // The branch where files will be uploaded
 
-    const octokit = new Octokit({
-      auth: token
-    });
-
     try {
+      // Dynamically import the Octokit module
+      const { Octokit } = await import('@octokit/rest');
+      const btoa = (str) => Buffer.from(str).toString('base64'); // Buffer-based Base64 encoding
+
+      const octokit = new Octokit({
+        auth: token
+      });
+
       for (const file of subtitleFiles) {
         const { fileName, content } = file;
 
